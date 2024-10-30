@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إحصاء التلاميذ وهرم الأعمار</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Amiri', Arial, sans-serif;
+            direction: rtl;
+            text-align: right;
+            background-color: #f0f4f8;
+            color: #2c3e50;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+        h1, h2, h3 {
+            text-align: center;
+            color: #34495e;
+        }
+        h1 {
+            margin-top: 30px;
+            font-size: 2.5em;
+        }
+        h2 {
+            font-size: 1.8em;
+            margin-bottom: 20px;
+        }
+        h3 {
+            font-size: 1.5em;
+            margin-top: 30px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: #ffffff;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        th, td {
+            border: 1px solid #bdc3c7;
+            padding: 12px;
+            font-weight: bold;
+            font-size: 16px;
+            text-align: center;
+        }
+        .header-cell {
+            background-color: #2c3e50;
+            color: #ffffff;
+        }
+        .total-cell {
+            background-color: #16a085;
+            color: #ffffff;
+        }
+        .subtotal-column {
+            background-color: #FFF1DB;
+            color: #2c3e50;
+        }
+        .white-cell {
+            background-color: #ffffff;
+            color: #2c3e50;
+        }
+        .light-blue-row {
+            background-color: #3498db;
+            color: #ffffff;
+        }
+        .dark-blue-row {
+            background-color: #2c3e50;
+            color: #ffffff;
+        }
+        .light-green-cell {
+            background-color: #16a085;
+            color: #ffffff;
+        }
+        button {
+            display: block;
+            width: 200px;
+            margin: 20px auto;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-family: 'Amiri', Arial, sans-serif;
+            cursor: pointer;
+            background-color: #2980b9;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #3498db;
+        }
+    </style>
+</head>
+<body>
+    <h1>المدرسة الإعداديّة بمطماطة</h1>
+    <h2>السنة الدراسية: 2024-2025</h2>
+
+    <h3>إحصاء التلاميذ</h3>
+    <div id="statTable"></div>
+    <button onclick="exportStatTable()">تصدير إحصاء التلاميذ</button>
+
+    <h3>هرم الأعمار</h3>
+    <div id="pyrTable"></div>
+    <button onclick="exportPyrTable()">تصدير هرم الأعمار</button>
+
+    <h3>هرم الأعمار حسب المستوى</h3>
+    <div id="pyrLevelTable"></div>
+    <button onclick="exportPyrLevelTable()">تصدير هرم الأعمار حسب المستوى</button>
+
+    <script>
+        const apiKey = "AIzaSyD9lfpPzn4edNavV_eVnu-E8lKaNLWmfXk";
+        const spreadsheetId = "1-p5lPL94cMj_0KyuGRm4n9Vb018KfQq3oAjIlAivHoM";
+
+        async function fetchSheetData(sheetName) {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${sheetName}?key=${apiKey}`;
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                return data.values;
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                return null;
+            }
+        }
+
+        function formatNumber(num) {
+            return num === "0" ? "-" : num.padStart(2, '0');
+        }
+
+        function createTable(data, containerId, tableType) {
+            const container = document.getElementById(containerId);
+            const table = document.createElement('table');
+            data.forEach((row, rowIndex) => {
+                const tr = document.createElement('tr');
+                row.forEach((cell, colIndex) => {
+                    const td = document.createElement('td');
+                    td.textContent = formatNumber(cell);
+                    
+                    if (tableType === 'stat') {
+                        if (rowIndex === 0 || colIndex === 0) {
+                            td.classList.add('header-cell');
+                        } else if (rowIndex === data.length - 1) {
+                            td.classList.add('light-green-cell');
+                        } else if (colIndex === row.length - 1) {
+                            td.classList.add('light-green-cell');
+                        } else if ([4, 7, 10, 14].includes(rowIndex)) {
+                            td.classList.add('light-blue-row');
+                        } else if ([11, 16].includes(rowIndex)) {
+                            td.classList.add('dark-blue-row');
+                        } else if ([1, 4, 7].includes(colIndex)) {
+                            td.classList.add('subtotal-column');
+                        } else {
+                            td.classList.add('white-cell');
+                        }
+                    } else if (tableType === 'pyr' || tableType === 'pyrLevel') {
+                        if (rowIndex === 0 || colIndex === 0) {
+                            td.classList.add('header-cell');
+                        } else if (rowIndex === data.length - 1 || colIndex === row.length - 1) {
+                            td.classList.add('total-cell');
+                        } else {
+                            td.classList.add('white-cell');
+                        }
+                    }
+
+                    tr.appendChild(td);
+                });
+                table.appendChild(tr);
+            });
+            container.innerHTML = '';
+            container.appendChild(table);
+        }
+
+        async function loadStatTable() {
+            const data = await fetchSheetData('Stat!A1:I18');
+            if (data) {
+                createTable(data, 'statTable', 'stat');
+            }
+        }
+
+        async function loadPyrTable() {
+            const data = await fetchSheetData('Pyr!A1:K12');
+            if (data) {
+                createTable(data, 'pyrTable', 'pyr');
+            }
+        }
+
+        async function loadPyrLevelTable() {
+            const data = await fetchSheetData('Pyr!A1:K12');
+            if (data) {
+                const headers = data[0];
+                const levels = [
+                    { name: "7أساسي", indices: [1, 2, 3] },
+                    { name: "8أساسي", indices: [4, 5] },
+                    { name: "9أساسي", indices: [6, 7] },
+                    { name: "1ثانوي", indices: [8, 9] },
+                    { name: "2علوم", indices: [10] }
+                ];
+
+                const levelData = [headers];
+                levels.forEach(level => {
+                    const row = [level.name];
+                    headers.slice(1).forEach((header, colIndex) => {
+                        const sum = level.indices.reduce((acc, index) => acc + parseInt(data[index][colIndex + 1] || 0), 0);
+                        row.push(sum.toString());
+                    });
+                    levelData.push(row);
+                });
+
+                const totalRow = ["المجموع"];
+                headers.slice(1).forEach((header, colIndex) => {
+                    const total = levelData.slice(1).reduce((acc, row) => acc + parseInt(row[colIndex + 1] || 0), 0);
+                    totalRow.push(total.toString());
+                });
+                levelData.push(totalRow);
+
+                createTable(levelData, 'pyrLevelTable', 'pyrLevel');
+            }
+        }
+
+        function exportTable(containerId, fileName, title) {
+            const container = document.getElementById(containerId);
+            const tableHTML = container.innerHTML;
+            const htmlContent = `
+                <!DOCTYPE html>
+                <html dir="rtl" lang="ar">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>${title}</title>
+                    <style>
+                        @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap');
+                        body { font-family: 'Amiri', Arial, sans-serif; direction: rtl; text-align: right; background-color: #f0f4f8; color: #2c3e50; line-height: 1.6; margin: 0; padding: 20px; }
+                        h1, h2, h3 { text-align: center; color: #34495e; }
+                        h1 { margin-top: 30px; font-size: 2.5em; }
+                        h2 { font-size: 1.8em; margin-bottom: 20px; }
+                        h3 { font-size: 1.5em; margin-top: 30px; }
+                        table { width: 100%; border-collapse: collapse; margin: 20px 0; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+                        th, td { border: 1px solid #bdc3c7; padding: 12px; font-weight: bold; font-size: 16px; text-align: center; }
+                        .header-cell { background-color: #2c3e50; color: #ffffff; }
+                        .total-cell { background-color: #16a085; color: #ffffff; }
+                        .subtotal-column { background-color: #FFF1DB; color: #2c3e50; }
+                        .white-cell { background-color: #ffffff; color: #2c3e50; }
+                        .light-blue-row { background-color: #3498db; color: #ffffff; }
+                        .dark-blue-row { background-color: #2c3e50; color: #ffffff; }
+                        .light-green-cell { background-color: #16a085; color: #ffffff; }
+                    </style>
+                </head>
+                <body>
+                    <h1>المدرسة الإعداديّة بمطماطة</h1>
+                    <h2>السنة الدراسية: 2024-2025</h2>
+                    <h3>${title}</h3>
+                    ${tableHTML}
+                </body>
+                </html>
+            `;
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            link.click();
+        }
+
+        function exportStatTable() {
+            exportTable('statTable', 'إحصاء_التلاميذ.html', 'إحصاء التلاميذ');
+        }
+
+        function exportPyrTable() {
+            exportTable('pyrTable', 'هرم_الأعمار.html', 'هرم الأعمار');
+        }
+
+        function exportPyrLevelTable() {
+            exportTable('pyrLevelTable', 'هرم_الأعمار_حسب_المستوى.html', 'هرم الأعمار حسب المستوى');
+        }
+
+        loadStatTable();
+        loadPyrTable();
+        loadPyrLevelTable();
+    </script>
+</body>
+</html>
