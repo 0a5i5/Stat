@@ -111,7 +111,7 @@
     <button onclick="exportPyrLevelTable()">تصدير هرم الأعمار حسب المستوى</button>
 
     <script>
-        const apiKey = "AIzaSyD9lfpPzn4edNavV_eVnu-E8lKaNLWmfXk";
+        const apiKey = "";
         const spreadsheetId = "1-p5lPL94cMj_0KyuGRm4n9Vb018KfQq3oAjIlAivHoM";
 
         async function fetchSheetData(sheetName) {
